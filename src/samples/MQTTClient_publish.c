@@ -18,16 +18,26 @@
 #include "stdlib.h"
 #include "string.h"
 #include "MQTTClient.h"
+#include <unistd.h>
+#include <sys/time.h>
 
-#define ADDRESS     "tcp://localhost:1883"
-#define CLIENTID    "ExampleClientPub"
-#define TOPIC       "MQTT Examples"
+#define ADDRESS     "tcp://10.3.5.48:1883"
+#define CLIENTID    "JulienEtBlaise"
+#define TOPIC       "DATE"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
 
 int main(int argc, char* argv[])
 {
+
+    int sec, usec;
+
+    printf("\nTimestamp\n");
+    struct timeval NTP_value;
+
+    
+
     MQTTClient client;
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -44,17 +54,32 @@ int main(int argc, char* argv[])
         printf("Failed to connect, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
-    pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = strlen(PAYLOAD);
-    pubmsg.qos = QOS;
-    pubmsg.retained = 0;
-    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
-    printf("Waiting for up to %d seconds for publication of %s\n"
-            "on topic %s for client with ClientID: %s\n",
-            (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
-    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
-    printf("Message with delivery token %d delivered\n", token);
+
+    while(1==1){
+	// that value is since 1970.
+	    gettimeofday(&NTP_value, NULL);
+	    sec = NTP_value.tv_sec;
+	    usec = NTP_value.tv_usec;
+
+	    printf("\n%d\n",sec);
+
+	    char str[10];
+	    sprintf(str, "%d", sec);
+	    pubmsg.payload = str;
+	    pubmsg.payloadlen = strlen(str);
+	    pubmsg.qos = QOS;
+	    pubmsg.retained = 0;
+	    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
+	    printf("Waiting for up to %d seconds for publication of %s\n"
+		    "on topic %s for client with ClientID: %s\n",
+		    (int)(TIMEOUT/1000), str, TOPIC, CLIENTID);
+	    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
+	    printf("Message with delivery token %d delivered\n", token);
+            sleep(1);
+	}
+//end while
     MQTTClient_disconnect(client, 10000);
     MQTTClient_destroy(&client);
     return rc;
+
 }
